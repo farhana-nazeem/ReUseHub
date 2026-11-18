@@ -24,12 +24,23 @@ if (session_id() === '') {
     session_start();
 }
 
+// Helper to read configuration from $_SERVER, $_ENV, or getenv() (crucial for Apache/FPM on OpenShift/Docker)
+if (!function_exists('get_cfg_env')) {
+    function get_cfg_env($key, $default = '') {
+        if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') return $_SERVER[$key];
+        if (isset($_ENV[$key]) && $_ENV[$key] !== '') return $_ENV[$key];
+        $val = getenv($key);
+        if ($val !== false && $val !== '') return $val;
+        return $default;
+    }
+}
+
 // Database Credentials (supports OpenShift, Docker, Kubernetes environment variables and local WAMP)
-$envHost = getenv('DB_HOST') ? getenv('DB_HOST') : (getenv('MYSQL_SERVICE_HOST') ? getenv('MYSQL_SERVICE_HOST') : (getenv('MYSQL_HOST') ? getenv('MYSQL_HOST') : '127.0.0.1'));
-$envPort = getenv('DB_PORT') ? getenv('DB_PORT') : (getenv('MYSQL_SERVICE_PORT') ? getenv('MYSQL_SERVICE_PORT') : (getenv('MYSQL_PORT') ? getenv('MYSQL_PORT') : '3306'));
-$envUser = getenv('DB_USER') ? getenv('DB_USER') : (getenv('MYSQL_USER') ? getenv('MYSQL_USER') : 'root');
-$envPass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : (getenv('MYSQL_PASSWORD') !== false ? getenv('MYSQL_PASSWORD') : '');
-$envName = getenv('DB_NAME') ? getenv('DB_NAME') : (getenv('MYSQL_DATABASE') ? getenv('MYSQL_DATABASE') : 'reusehub_db');
+$envHost = get_cfg_env('DB_HOST', get_cfg_env('MYSQL_SERVICE_HOST', get_cfg_env('MYSQL_HOST', '127.0.0.1')));
+$envPort = get_cfg_env('DB_PORT', get_cfg_env('MYSQL_SERVICE_PORT', get_cfg_env('MYSQL_PORT', '3306')));
+$envUser = get_cfg_env('DB_USER', get_cfg_env('MYSQL_USER', 'root'));
+$envPass = get_cfg_env('DB_PASS', get_cfg_env('MYSQL_PASSWORD', ''));
+$envName = get_cfg_env('DB_NAME', get_cfg_env('MYSQL_DATABASE', 'reusehub_db'));
 
 if (!defined('DB_HOST')) define('DB_HOST', $envHost);
 if (!defined('DB_PORT')) define('DB_PORT', $envPort);
@@ -93,7 +104,7 @@ function getDB() {
         } catch (PDOException $e) {
             die("<div style='font-family:sans-serif;padding:30px;background:#fff1f2;border:1px solid #f43f5e;color:#881337;border-radius:8px;max-width:600px;margin:40px auto;'>" .
                 "<h3 style='margin-top:0;'>ReUseHub Database Connection Error</h3>" .
-                "<p>Could not connect to MySQL server. Please ensure WAMP MySQL service is running.</p>" .
+                "<p>Could not connect to MySQL server at <code>" . htmlspecialchars(DB_HOST) . ":" . htmlspecialchars(DB_PORT) . "</code> as user <code>" . htmlspecialchars(DB_USER) . "</code>.</p>" .
                 "<p style='font-size:13px;color:#9f1239;'>Details: " . htmlspecialchars($e->getMessage()) . "</p>" .
                 "</div>");
         }

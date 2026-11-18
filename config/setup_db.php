@@ -1,9 +1,11 @@
 <?php
 // Database Configuration and Setup Script for ReUseHub
-$host = '127.0.0.1';
-$port = 3306;
-$user = 'root';
-$pass = '';
+require_once __DIR__ . '/database.php';
+
+$host = DB_HOST;
+$port = DB_PORT;
+$user = DB_USER;
+$pass = DB_PASS;
 
 echo "Connecting to MySQL server at {$host}:{$port}...\n";
 

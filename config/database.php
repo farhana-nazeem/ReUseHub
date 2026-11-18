@@ -24,21 +24,30 @@ if (session_id() === '') {
     session_start();
 }
 
-// Database Credentials
-define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3306');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'reusehub_db');
+// Database Credentials (supports OpenShift, Docker, Kubernetes environment variables and local WAMP)
+$envHost = getenv('DB_HOST') ? getenv('DB_HOST') : (getenv('MYSQL_SERVICE_HOST') ? getenv('MYSQL_SERVICE_HOST') : (getenv('MYSQL_HOST') ? getenv('MYSQL_HOST') : '127.0.0.1'));
+$envPort = getenv('DB_PORT') ? getenv('DB_PORT') : (getenv('MYSQL_SERVICE_PORT') ? getenv('MYSQL_SERVICE_PORT') : (getenv('MYSQL_PORT') ? getenv('MYSQL_PORT') : '3306'));
+$envUser = getenv('DB_USER') ? getenv('DB_USER') : (getenv('MYSQL_USER') ? getenv('MYSQL_USER') : 'root');
+$envPass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : (getenv('MYSQL_PASSWORD') !== false ? getenv('MYSQL_PASSWORD') : '');
+$envName = getenv('DB_NAME') ? getenv('DB_NAME') : (getenv('MYSQL_DATABASE') ? getenv('MYSQL_DATABASE') : 'reusehub_db');
+
+if (!defined('DB_HOST')) define('DB_HOST', $envHost);
+if (!defined('DB_PORT')) define('DB_PORT', $envPort);
+if (!defined('DB_USER')) define('DB_USER', $envUser);
+if (!defined('DB_PASS')) define('DB_PASS', $envPass);
+if (!defined('DB_NAME')) define('DB_NAME', $envName);
 
 // Platform Identity
-define('APP_NAME', 'ReUseHub');
-define('APP_TAGLINE', 'Use More. Own Less.');
-define('CURRENCY_SYMBOL', '₹');
-define('PLATFORM_FEE_PERCENT', 3.0); // 3% nominal marketplace service fee
+if (!defined('APP_NAME')) define('APP_NAME', 'ReUseHub');
+if (!defined('APP_TAGLINE')) define('APP_TAGLINE', 'Use More. Own Less.');
+if (!defined('CURRENCY_SYMBOL')) define('CURRENCY_SYMBOL', '₹');
+if (!defined('PLATFORM_FEE_PERCENT')) define('PLATFORM_FEE_PERCENT', 3.0); // 3% nominal marketplace service fee
 
-// Determine dynamic base URL for seamless WAMP / Apache / PHP CLI server support
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)) ? "https://" : "http://";
+// Determine dynamic base URL for seamless WAMP / Apache / OpenShift / reverse-proxy support
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+    || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+$protocol = $isHttps ? "https://" : "http://";
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
 
 // Compute project base path relative to webroot using filesystem comparison only.
@@ -55,14 +64,16 @@ if ($docRoot !== false && $projectRoot !== false && strpos($projectRoot, $docRoo
 // If docRoot detection fails (e.g., different drive), $relativePath stays ''
 // and BASE_URL falls back to http://localhost/ — safe for WAMP default setup.
 
-if (!empty($relativePath)) {
-    define('BASE_URL', rtrim($protocol . $host . '/' . $relativePath, '/') . '/');
-} else {
-    define('BASE_URL', rtrim($protocol . $host, '/') . '/');
+if (!defined('BASE_URL')) {
+    if (!empty($relativePath)) {
+        define('BASE_URL', rtrim($protocol . $host . '/' . $relativePath, '/') . '/');
+    } else {
+        define('BASE_URL', rtrim($protocol . $host, '/') . '/');
+    }
 }
 
-define('UPLOAD_DIR', __DIR__ . '/../uploads/');
-define('UPLOAD_URL', BASE_URL . 'uploads/');
+if (!defined('UPLOAD_DIR')) define('UPLOAD_DIR', __DIR__ . '/../uploads/');
+if (!defined('UPLOAD_URL')) define('UPLOAD_URL', BASE_URL . 'uploads/');
 
 /**
  * Returns a singleton PDO connection

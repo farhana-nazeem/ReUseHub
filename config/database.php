@@ -24,23 +24,50 @@ if (session_id() === '') {
     session_start();
 }
 
-// Helper to read configuration from $_SERVER, $_ENV, or getenv() (crucial for Apache/FPM on OpenShift/Docker)
+// Helper to read configuration from $_SERVER, $_ENV, getenv(), or /proc/self/environ (crucial for Apache/FPM on OpenShift/Docker)
 if (!function_exists('get_cfg_env')) {
     function get_cfg_env($key, $default = '') {
         if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') return $_SERVER[$key];
         if (isset($_ENV[$key]) && $_ENV[$key] !== '') return $_ENV[$key];
         $val = getenv($key);
         if ($val !== false && $val !== '') return $val;
+
+        // On Linux / OpenShift containers where PHP variables_order does not include 'E'
+        static $procEnv = null;
+        if ($procEnv === null) {
+            $procEnv = array();
+            if (@is_readable('/proc/self/environ')) {
+                $raw = @file_get_contents('/proc/self/environ');
+                if ($raw) {
+                    $pairs = explode("\0", $raw);
+                    foreach ($pairs as $pair) {
+                        if (strpos($pair, '=') !== false) {
+                            $parts = explode('=', $pair, 2);
+                            $procEnv[$parts[0]] = $parts[1];
+                        }
+                    }
+                }
+            }
+        }
+        if (isset($procEnv[$key]) && $procEnv[$key] !== '') return $procEnv[$key];
+
         return $default;
     }
 }
 
-// Database Credentials (supports OpenShift, Docker, Kubernetes environment variables and local WAMP)
-$envHost = get_cfg_env('DB_HOST', get_cfg_env('MYSQL_SERVICE_HOST', get_cfg_env('MYSQL_HOST', '127.0.0.1')));
+// Auto-detect environment: OpenShift container (/opt/app-root) vs local WAMP (C:/wamp)
+$isOpenShift = is_dir('/opt/app-root');
+$defaultHost = $isOpenShift ? 'mysql' : '127.0.0.1';
+$defaultUser = $isOpenShift ? 'reusehub' : 'root';
+$defaultPass = $isOpenShift ? 'reusehubpass123' : '';
+$defaultName = 'reusehub_db';
+
+// Database Credentials
+$envHost = get_cfg_env('DB_HOST', get_cfg_env('MYSQL_SERVICE_HOST', get_cfg_env('MYSQL_HOST', $defaultHost)));
 $envPort = get_cfg_env('DB_PORT', get_cfg_env('MYSQL_SERVICE_PORT', get_cfg_env('MYSQL_PORT', '3306')));
-$envUser = get_cfg_env('DB_USER', get_cfg_env('MYSQL_USER', 'root'));
-$envPass = get_cfg_env('DB_PASS', get_cfg_env('MYSQL_PASSWORD', ''));
-$envName = get_cfg_env('DB_NAME', get_cfg_env('MYSQL_DATABASE', 'reusehub_db'));
+$envUser = get_cfg_env('DB_USER', get_cfg_env('MYSQL_USER', $defaultUser));
+$envPass = get_cfg_env('DB_PASS', get_cfg_env('MYSQL_PASSWORD', $defaultPass));
+$envName = get_cfg_env('DB_NAME', get_cfg_env('MYSQL_DATABASE', $defaultName));
 
 if (!defined('DB_HOST')) define('DB_HOST', $envHost);
 if (!defined('DB_PORT')) define('DB_PORT', $envPort);

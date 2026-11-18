@@ -41,22 +41,19 @@ define('PLATFORM_FEE_PERCENT', 3.0); // 3% nominal marketplace service fee
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)) ? "https://" : "http://";
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
 
-// Compute project base path relative to webroot
-$docRoot = str_replace('\\', '/', realpath(isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : 'C:/wamp/www'));
+// Compute project base path relative to webroot using filesystem comparison only.
+// Using SCRIPT_NAME to derive path is unreliable (causes double-folder URLs like
+// /ReUseHub/ReUseHub/list-item.php when navigating between pages).
+$docRoot    = str_replace('\\', '/', realpath(isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : 'C:/wamp/www'));
 $projectRoot = str_replace('\\', '/', realpath(__DIR__ . '/..'));
 
 $relativePath = '';
-if (strpos($projectRoot, $docRoot) === 0) {
+if ($docRoot !== false && $projectRoot !== false && strpos($projectRoot, $docRoot) === 0) {
+    // Standard case: project lives inside the webroot
     $relativePath = trim(substr($projectRoot, strlen($docRoot)), '/');
-} else {
-    // If running from separate drive (e.g., D:\ReUseHub with localhost/ReUseHub or php -S)
-    $scriptDir = str_replace('\\', '/', dirname(isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : ''));
-    if (strpos($scriptDir, '/admin') !== false || strpos($scriptDir, '/owner') !== false || strpos($scriptDir, '/user') !== false) {
-        $relativePath = trim(dirname($scriptDir), '/');
-    } else {
-        $relativePath = trim($scriptDir, '/');
-    }
 }
+// If docRoot detection fails (e.g., different drive), $relativePath stays ''
+// and BASE_URL falls back to http://localhost/ — safe for WAMP default setup.
 
 if (!empty($relativePath)) {
     define('BASE_URL', rtrim($protocol . $host . '/' . $relativePath, '/') . '/');

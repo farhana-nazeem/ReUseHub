@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     if (empty($errors)) {
         $stmt = $pdo->prepare("UPDATE users SET name = ?, phone = ?, city = ?, pincode = ?, address = ?, bio = ?, updated_at = NOW() WHERE id = ?");
-        if ($stmt->execute([$name, $phone, $city, $pincode, $address, $bio, $user['id']])) {
+        if ($stmt->execute(array($name, $phone, $city, $pincode, $address, $bio, $user['id']))) {
             $_SESSION['user_name'] = $name;
             setFlash('success', 'Your profile details have been updated successfully.');
             header("Location: " . url('user/profile.php'));
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } else {
         $hashed = password_hash($newPass, PASSWORD_BCRYPT);
         $stmt = $pdo->prepare("UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?");
-        if ($stmt->execute([$hashed, $user['id']])) {
+        if ($stmt->execute(array($hashed, $user['id']))) {
             setFlash('success', 'Your password has been changed securely.');
             header("Location: " . url('user/profile.php'));
             exit();
@@ -174,17 +174,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <div class="row g-3 mb-3">
               <div class="col-md-8">
                 <label class="form-label fw-semibold small text-dark">Address / Locality</label>
-                <input type="text" name="address" class="form-control" placeholder="House/Flat name, Street, Landmark" value="<?php echo  e($user['address'] ?? ''); ?>">
+                <input type="text" name="address" class="form-control" placeholder="House/Flat name, Street, Landmark" value="<?php echo  e(isset($user['address']) ? $user['address'] : ''); ?>">
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-semibold small text-dark">PIN Code</label>
-                <input type="text" name="pincode" class="form-control" placeholder="682001" value="<?php echo  e($user['pincode'] ?? ''); ?>">
+                <input type="text" name="pincode" class="form-control" placeholder="682001" value="<?php echo  e(isset($user['pincode']) ? $user['pincode'] : ''); ?>">
               </div>
             </div>
 
             <div class="mb-4">
               <label class="form-label fw-semibold small text-dark">Short Bio / Introduction</label>
-              <textarea name="bio" class="form-control" rows="3" placeholder="Tell other members what you do, what hobbies you have, or what items you usually look for."><?php echo  e($user['bio'] ?? ''); ?></textarea>
+              <textarea name="bio" class="form-control" rows="3" placeholder="Tell other members what you do, what hobbies you have, or what items you usually look for."><?php echo  e(isset($user['bio']) ? $user['bio'] : ''); ?></textarea>
             </div>
 
             <button type="submit" class="btn btn-primary-custom px-4 py-2">

@@ -187,3 +187,8 @@ For complete step-by-step setup details, refer to [`WAMP_SETUP_GUIDE.md`](WAMP_S
 
 &copy; 2026 ReUseHub Technologies. Built with pride for Kerala & India.
 
+#   R e U s e H u b  
+ "# ReUseHub" 
+"# ReUseHub" 
+#   R e U s e H u b  
+ 

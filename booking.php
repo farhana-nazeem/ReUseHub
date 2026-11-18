@@ -199,23 +199,45 @@ if (!str_starts_with($primaryImg, 'http://') && !str_starts_with($primaryImg, 'h
           </div>
 
           <!-- Date Adjuster -->
-          <form action="<?php echo  url('booking.php'); ?>" method="GET" class="row g-3 mb-3">
+          <form action="<?php echo  url('booking.php'); ?>" method="GET" class="row g-3 mb-3" id="dateAdjusterForm">
             <input type="hidden" name="product_id" value="<?php echo  $product['id']; ?>">
 
             <div class="col-md-5">
               <label class="form-label small fw-bold text-dark">Rental Start Date</label>
-              <input type="date" name="start_date" class="form-control form-control-sm" value="<?php echo  e($startDate); ?>" min="<?php echo  $today; ?>" onchange="this.form.submit()">
+              <input type="date" name="start_date" id="startDateInput" class="form-control form-control-sm" value="<?php echo  e($startDate); ?>" min="<?php echo  $today; ?>" onchange="onStartDateChange(this)">
             </div>
 
             <div class="col-md-5">
               <label class="form-label small fw-bold text-dark">Rental End Date</label>
-              <input type="date" name="end_date" class="form-control form-control-sm" value="<?php echo  e($endDate); ?>" min="<?php echo  e($startDate); ?>" onchange="this.form.submit()">
+              <input type="date" name="end_date" id="endDateInput" class="form-control form-control-sm" value="<?php echo  e($endDate); ?>" min="<?php echo  e($startDate); ?>" onchange="this.form.submit()">
             </div>
 
             <div class="col-md-2 d-flex align-items-end">
               <button type="submit" class="btn btn-outline-secondary btn-sm w-100">Update</button>
             </div>
           </form>
+
+          <script>
+          function onStartDateChange(startInput) {
+            var endInput = document.getElementById('endDateInput');
+            var newStart = startInput.value;
+
+            // Update end date's minimum to the new start date
+            endInput.min = newStart;
+
+            // If end date is now before or equal to start date, push it forward by 1 day
+            if (!endInput.value || endInput.value <= newStart) {
+              var d = new Date(newStart);
+              d.setDate(d.getDate() + 1);
+              var yyyy = d.getFullYear();
+              var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+              var dd = ('0' + d.getDate()).slice(-2);
+              endInput.value = yyyy + '-' + mm + '-' + dd;
+            }
+
+            startInput.form.submit();
+          }
+          </script>
 
           <div class="p-3 rounded-3 bg-light-subtle border">
             <div class="d-flex justify-content-between align-items-center">

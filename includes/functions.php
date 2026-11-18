@@ -234,12 +234,13 @@ function generateBookingCode() {
  * Calculate rental pricing breakdown
  */
 function calculateRental($dailyPrice, $startDate, $endDate, $securityDeposit = 0) {
-    $start = new DateTime($startDate);
-    $end = new DateTime($endDate);
-    
-    // Inclusive rental days (e.g. 15th to 17th = 3 days)
-    $diff = $start->diff($end);
-    $days = $diff->days + 1;
+    // Use strtotime() difference — avoids PHP 5.3.x DateInterval::$days bug
+    // where diff()->days returns a garbage value (e.g. 6016 for a 3-day range).
+    $startTs = strtotime($startDate);
+    $endTs   = strtotime($endDate);
+
+    // Inclusive rental days (e.g. 19th to 21st = 3 days)
+    $days = (int)floor(($endTs - $startTs) / 86400) + 1;
     if ($days < 1) $days = 1;
 
     $rentalAmount = round($dailyPrice * $days, 2);
